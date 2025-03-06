@@ -1,3 +1,4 @@
+import streamlit as st
 import os
 from typing import Annotated
 import pandas as pd
@@ -19,6 +20,7 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+
 
 tavily_api_key = os.getenv("TAVILY_API_KEY")
 
@@ -84,11 +86,11 @@ def talk_to_user(questions: str) -> str:
         Args:
         questions: The question that the user want to ask the user. Only provide the string question without any additional data
     """
+ 
     print(questions)
-    st.write("**Question:** " + questions)
-    # user_response = str(input(">> "))
-    answer = st.text_input("Your answer:", key=questions)
-    return answer
+    user_response = str(input(">> "))
+
+    return user_response
 
 # Load the library data
 LIBRARY_DATA_PATH = "library_books.csv"
@@ -158,7 +160,7 @@ def get_faculty() -> str:
 def get_aluini() -> str:
 
     """
-    Gets the full list of alumini members their cuurent profession details, contact details etc.
+    Gets the full list of alumini members their curent profession details, contact details etc.
 
     Result:
         entire data regarding almini.
@@ -227,7 +229,7 @@ Workflow:
 - **Step 2:** Analyze the responses to identify the most relevant topics and skills needed.
 - **Step 3:** Use web search to fetch current data and trends related to the chosen field.
 - **Step 4:** Use get_library_books to verify if there are textbooks or other resources in the library.
-- **Step 5:** Retrieve faculty data with get_faculty and alumni data with get_aluini to highlight potential mentors.
+- **Step 5:** Retrieve faculty data with get_faculty and alumni data with get_aluini tools to highlight potential mentors.
 - **Step 6:** Develop a detailed roadmap that includes:
     - A progression from foundational to advanced topics.
     - Specific subtopics under each major area.
@@ -238,55 +240,19 @@ Workflow:
 
 Final Output:
 The final output must be a highly detailed, structured roadmap that a student can use to fully learn a specific technology field or skill. This roadmap should include topic-wise breakdowns, subtopics, actionable steps, project recommendations, library references, and mentorship opportunities through faculty and alumni contacts.
+Remeber that the final outcome should include faculty or alumini data. Make sure there is some
 
 Remember:
 Your goal is to empower students to make informed decisions about their educational and career paths by providing tailored, current, and comprehensive guidance. Always begin by assessing the student’s current level and continuously refine your recommendations based on their input.
 """
 
-abot = Agent(llm, [search_tool, talk_to_user, get_library_books], system=prompt)
-
-# messages = [HumanMessage(content="I would like to learn about Robitcs")]
-# result = abot.graph.invoke({"messages": messages})
-# print(result['messages'][-1].content)
+abot = Agent(llm, [search_tool, talk_to_user, get_library_books, get_faculty, get_aluini], system=prompt)
 
 
-import streamlit as st
-# from langchain_core.messages import HumanMessage
-# # Import your pre-configured agent (assuming it’s defined as `abot` in your agent module)
-# from your_agent_module import abot  # adjust the import according to your project structure
+msg = str(input(">> "))
+messages = [HumanMessage(content=msg)]
+result = abot.graph.invoke({"messages": messages})
+print(result['messages'][-1].content)
 
-def main():
-    st.title("Career Guidance Chatbot")
-    st.markdown("Welcome! Ask any question about robotics or computer vision, and I'll help guide you.")
 
-    # Initialize session state for conversation if it doesn't exist.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
 
-    # Display existing conversation
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # Capture user input
-    user_input = st.chat_input("Enter your message:")
-
-    if user_input:
-        # Append user message to the conversation history
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        
-        # Create a HumanMessage for the agent using the latest input
-        agent_input = [HumanMessage(content=user_input)]
-        
-        # Call your agent to process the input and generate a response
-        result = abot.graph.invoke({"messages": agent_input})
-        bot_response = result["messages"][-1].content
-        
-        # Append the agent response to the conversation history
-        st.session_state.messages.append({"role": "bot", "content": bot_response})
-        
-        # Rerun to update the UI with new messages
-        st.experimental_rerun()
-
-if __name__ == '__main__':
-    main()
