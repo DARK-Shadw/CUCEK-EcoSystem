@@ -85,8 +85,10 @@ def talk_to_user(questions: str) -> str:
         questions: The question that the user want to ask the user. Only provide the string question without any additional data
     """
     print(questions)
-    user_response = str(input(">> "))
-    return user_response
+    st.write("**Question:** " + questions)
+    # user_response = str(input(">> "))
+    answer = st.text_input("Your answer:", key=questions)
+    return answer
 
 # Load the library data
 LIBRARY_DATA_PATH = "library_books.csv"
@@ -243,6 +245,48 @@ Your goal is to empower students to make informed decisions about their educatio
 
 abot = Agent(llm, [search_tool, talk_to_user, get_library_books], system=prompt)
 
-messages = [HumanMessage(content="I would like to learn about Robitcs")]
-result = abot.graph.invoke({"messages": messages})
-print(result['messages'][-1].content)
+# messages = [HumanMessage(content="I would like to learn about Robitcs")]
+# result = abot.graph.invoke({"messages": messages})
+# print(result['messages'][-1].content)
+
+
+import streamlit as st
+# from langchain_core.messages import HumanMessage
+# # Import your pre-configured agent (assuming it’s defined as `abot` in your agent module)
+# from your_agent_module import abot  # adjust the import according to your project structure
+
+def main():
+    st.title("Career Guidance Chatbot")
+    st.markdown("Welcome! Ask any question about robotics or computer vision, and I'll help guide you.")
+
+    # Initialize session state for conversation if it doesn't exist.
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Display existing conversation
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Capture user input
+    user_input = st.chat_input("Enter your message:")
+
+    if user_input:
+        # Append user message to the conversation history
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        
+        # Create a HumanMessage for the agent using the latest input
+        agent_input = [HumanMessage(content=user_input)]
+        
+        # Call your agent to process the input and generate a response
+        result = abot.graph.invoke({"messages": agent_input})
+        bot_response = result["messages"][-1].content
+        
+        # Append the agent response to the conversation history
+        st.session_state.messages.append({"role": "bot", "content": bot_response})
+        
+        # Rerun to update the UI with new messages
+        st.experimental_rerun()
+
+if __name__ == '__main__':
+    main()
