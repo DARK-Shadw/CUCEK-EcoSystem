@@ -54,10 +54,10 @@ Students can ask the chatbot about study groups, peer tutoring, or faculty avail
 ### Implementation
 For Software:
 # Installation
-[commands]
+pip install -r requirements.txt
 
 # Run
-[commands]
+python agent.py
 
 ## Team Contributions
 - FAHAD IP: FRONTEND
