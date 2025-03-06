@@ -254,5 +254,3 @@ messages = [HumanMessage(content=msg)]
 result = abot.graph.invoke({"messages": messages})
 print(result['messages'][-1].content)
 
-
-
