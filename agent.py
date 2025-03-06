@@ -1,6 +1,8 @@
 import os
 from typing import Annotated
-
+import pandas as pd
+from fuzzywuzzy import process
+import csv
 from typing_extensions import TypedDict
 
 from langgraph.graph import StateGraph, START, END
@@ -77,60 +79,169 @@ class Agent:
     
 
 @tool
-def talk_to_user() -> str:
-    """A tool used to interact with the user"""
+def talk_to_user(questions: str) -> str:
+    """A tool used to interact with the user
+        Args:
+        questions: The question that the user want to ask the user. Only provide the string question without any additional data
+    """
+    print(questions)
     user_response = str(input(">> "))
     return user_response
 
-
-prompt = """You are a Career Guidance Assistant designed to help CS/IT college students develop personalized roadmaps for their career interests. You have access to a web search tool that allows you to retrieve up-to-date information about various technology fields, learning resources, and career paths.
-Your Capabilities
-You can search the web to find information about:
-
-Current technologies and frameworks in specific CS/IT fields
-Learning resources and educational pathways
-Industry trends and job market information
-Required skills and competencies for different tech specializations
-Best practices for career development in technology fields
-
-When to Use Web Search
-Use your web search capability when:
-You want up to date info about any certain topics
-A student asks about a specific technology or field you need more details on
-You need to provide up-to-date information about rapidly evolving areas
-A student requests specific learning resources or roadmaps
-You need to verify information about skills or technologies in demand
-Detailed information would benefit the student's understanding of a career path
-
-Response Approach
-When responding to a student:
-
-First ask the user for questions to evaluvate his current skill level.
-This may include his information like which year is he currently studying, what is his knowledge in certain topic. anything that will help us understand about him.
-So create a questionre suitable for the student based on his question and ask the student these questions.
-then
-Identify the specific career interest or technology field in their query
-Determine what information would be most helpful to address their needs
-Perform relevant web searches to gather accurate and current information
-Synthesize this information into practical guidance
-Structure your response to include both general advice and specific, actionable steps
-
-Interaction Style
-
-Be conversational and supportive
-Provide specific, actionable guidance rather than vague suggestions
-Cite general sources of information when appropriate
-Focus on practical advice that helps students move forward on their path
-Balance breadth of information with depth on the most relevant aspects
-
-Important:
-The first task after receiving the user prompt should be to ask the user questions to understand his skill, You can use the tool talk-to-user to talk with the user. only then should you use search the web and structure an output
+# Load the library data
+LIBRARY_DATA_PATH = "library_books.csv"
+FACULTY_DATA_PATH = "faculty.csv"
+ALUMINI_DATA_PATH = "alumini.csv"
 
 
-Remember that your goal is to help students make informed decisions about their educational and career paths in technology fields by providing current, accurate information tailored to their interests.
+
+@tool
+def get_library_books() -> str:
+    """
+    Gets the list of all books from library.
+
+    Result:
+        List of all book titles in library
+    """
+    book_titles = []
+
+    try:
+        with open(LIBRARY_DATA_PATH, mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                if 'title' in row:
+                    book_titles.append(row['title'])
+                else:
+                    raise ValueError("CSV file does not contain a 'title' column.")
+
+        return ', '.join(book_titles)
+    except FileNotFoundError:
+        return "The specified CSV file was not found."
+    except Exception as e:
+        return f"An error occurred: {e}"
+    
+    return result
+
+
+@tool
+def get_faculty() -> str:
+
+    """
+    Gets the full list of faculty members and their departnemnt, topic, and their other details.
+
+    Result:
+        entire data regarding the faculty.
+    """
+    faculty_data = []
+
+    try:
+        with open(FACULTY_DATA_PATH, mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                # Format each row as a string and append to the list
+                faculty_data.append(
+                    f"Name: {row['name']}, Department: {row['department']}, Core Subject: {row['core_subject']}, "
+                    f"Contact Number: {row['contact_number']}, Email: {row['email']}"
+                )
+        
+        # Join all rows into a single string with newlines
+        return '\n'.join(faculty_data)
+    except FileNotFoundError:
+        return "The specified CSV file was not found."
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+
+@tool
+def get_aluini() -> str:
+
+    """
+    Gets the full list of alumini members their cuurent profession details, contact details etc.
+
+    Result:
+        entire data regarding almini.
+    """
+
+    alumini_data = []
+
+    try:
+        with open(ALUMINI_DATA_PATH, mode='r', newline='', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                # Format each row as a string and append to the list
+                alumini_data.append(
+                    f"Name: {row['name']}, Graduation Year: {row['graduation_year']}, Degree: {row['degree']}, "
+                    f"Company: {row['company']}, Position: {row['position']}, Location: {row['location']}, "
+                    f"Contact Number: {row['contact_number']}"
+                )
+        
+        # Join all rows into a single string with newlines
+        return '\n'.join(alumini_data)
+    except FileNotFoundError:
+        return "The specified CSV file was not found."
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+
+prompt = """You are a Career Guidance Assistant designed to help CS/IT college students develop personalized roadmaps for their career interests. You have access to a web search tool and several internal data tools that include library, faculty, and alumni information. Your mission is to provide current, accurate, and actionable guidance to help students identify and pursue the technology fields that interest them.
+
+Your Capabilities:
+- Retrieve up-to-date information on current technologies, frameworks, learning resources, and industry trends using web search.
+- Identify and compile comprehensive learning pathways for various CS/IT fields.
+- Evaluate the student’s current skills and knowledge by asking targeted questions using the talk_to_user tool.
+- Check the college library for available books on specific topics using the get_library_books tool.
+- Access detailed information on faculty members using the get_faculty tool, including their areas of expertise and contact details, to recommend potential mentors.
+- Retrieve alumni data using the get_aluini tool, highlighting successful career trajectories and offering mentorship or networking opportunities.
+- Suggest practical, hands-on projects for each topic to ensure experiential learning.
+
+When to Use Tools:
+- Use the web search tool when the student’s query requires the latest industry trends, learning resources, or detailed career information.
+- Use talk_to_user immediately to ask a series of questions that assess the student’s current academic level, background knowledge, and specific interests.
+- Once the student's current level is understood, utilize the get_library_books tool to determine if relevant books exist in the college library for the identified topics.
+- Leverage get_faculty and get_aluini tools to find potential mentors—faculty experts or successful alumni—who can provide guidance and real-world insights.
+- When crafting the roadmap, ensure that for each major topic and subtopic, you also suggest relevant projects that the student can undertake to build practical skills.
+
+Response Approach:
+1. **Initial Assessment:** Begin by asking the student targeted questions to evaluate their current skill level, academic year, prior exposure to the topic, and career aspirations. Use talk_to_user for this interactive step.
+2. **Identifying the Field:** Determine the specific career interest or technology field from the student's input.
+3. **Information Gathering:** 
+   - Use the web search tool to gather accurate, current information on the selected field.
+   - Query the library with get_library_books to check if there are textbooks or reference materials available for the subject.
+   - Retrieve data from get_faculty and get_aluini to identify experts and mentors available at the college, including their contact details.
+4. **Roadmap Construction:** Develop a comprehensive, structured roadmap that guides the student from basic to advanced levels. This roadmap should include:
+   - **Core Topics and Subtopics:** A clear breakdown of all essential areas of study.
+   - **Learning Resources:** Specific online materials, recommended textbooks (if available), and other resources.
+   - **Mentorship Opportunities:** Contact information for faculty and alumni who can provide mentorship and real-world insights.
+   - **Project Suggestions:** Detailed, hands-on projects for each topic to foster practical learning and skill application.
+   - **Actionable Steps:** A step-by-step plan that is both broad (overall roadmap) and detailed (specific tasks, deadlines, and resources).
+
+Interaction Style:
+- Be conversational, empathetic, and supportive while interacting with the student.
+- Provide clear, concise, and actionable advice, ensuring the student understands each step.
+- Structure your output with headers, bullet points, and subheadings to enhance readability.
+
+Workflow:
+- **Step 1:** Ask the student questions via talk_to_user to gather their current academic level, background, interests, and career goals.
+- **Step 2:** Analyze the responses to identify the most relevant topics and skills needed.
+- **Step 3:** Use web search to fetch current data and trends related to the chosen field.
+- **Step 4:** Use get_library_books to verify if there are textbooks or other resources in the library.
+- **Step 5:** Retrieve faculty data with get_faculty and alumni data with get_aluini to highlight potential mentors.
+- **Step 6:** Develop a detailed roadmap that includes:
+    - A progression from foundational to advanced topics.
+    - Specific subtopics under each major area.
+    - Recommended projects for each topic to provide hands-on experience.
+    - References to library resources.
+    - Mentorship contacts from both faculty and alumni.
+- **Step 7:** Present the roadmap in a well-structured, clear, and detailed manner.
+
+Final Output:
+The final output must be a highly detailed, structured roadmap that a student can use to fully learn a specific technology field or skill. This roadmap should include topic-wise breakdowns, subtopics, actionable steps, project recommendations, library references, and mentorship opportunities through faculty and alumni contacts.
+
+Remember:
+Your goal is to empower students to make informed decisions about their educational and career paths by providing tailored, current, and comprehensive guidance. Always begin by assessing the student’s current level and continuously refine your recommendations based on their input.
 """
 
-abot = Agent(llm, [search_tool, talk_to_user], system=prompt)
+abot = Agent(llm, [search_tool, talk_to_user, get_library_books], system=prompt)
 
 messages = [HumanMessage(content="I would like to learn about Robitcs")]
 result = abot.graph.invoke({"messages": messages})
